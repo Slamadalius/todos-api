@@ -1,6 +1,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
+var db = require('./db.js')
 
 var app = express();
 var PORT = process.env.PORT || 3000;
@@ -57,32 +58,36 @@ app.get('/todos/:id', function (req, res) {
 // POST /todos
 app.post('/todos', function (req, res) {
    var body = _.pick(req.body, "description", "completed");
-   var validAttributes = {};
 
-   if (body.hasOwnProperty("completed") && _.isBoolean(body.completed)) {
-      validAttribute = body.completed;
-   } else if (body.hasOwnProperty('completed')) {
-      return res.status(400).send();
-   } else {
-      //never provided attribute no problem here
-   }
+   db.todo.create(body).then(function(todo){
+      res.json(todo.toJSON());
+   }, function(e){
+      res.status(400).json(e);
+   });
+   
+   
+   //   var validAttributes = {};
 
-
-
-
-
-
-   if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
-      return res.status(400).send();
-   }
-
-   body.description = body.description.trim();
-
-   body.id = todoNextId++;
-
-   todos.push(body);
-
-   res.json(body);
+//   if (body.hasOwnProperty("completed") && _.isBoolean(body.completed)) {
+//      validAttribute = body.completed;
+//   } else if (body.hasOwnProperty('completed')) {
+//      return res.status(400).send();
+//   } else {
+//      //never provided attribute no problem here
+//   }
+//
+//
+//   if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
+//      return res.status(400).send();
+//   }
+//
+//   body.description = body.description.trim();
+//
+//   body.id = todoNextId++;
+//
+//   todos.push(body);
+//
+//   res.json(body);
 });
 
 // DELETE /todos/:id
@@ -138,11 +143,10 @@ app.put('/todos/:id', function (req, res) {
    _.extend(matchedTodo, validAttributes);
    res.json(matchedTodo);
 
-
-
 });
 
-
-app.listen(PORT, function () {
-   console.log('Express server starting on port ' + PORT);
-});
+db.sequelize.sync().then(function () {
+   app.listen(PORT, function () {
+      console.log('Express server starting on port ' + PORT);
+   });
+})
